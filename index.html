@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talabalar baholari</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 16px;
+    background: #f3f4f6;
+    color: #111827;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 16px; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  .row { display: flex; gap: 8px; }
+  input, select, button {
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+  }
+  input { flex: 1; min-width: 0; }
+  button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  button.danger { background: #dc2626; }
+  .student-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .name { font-weight: 600; font-size: 18px; }
+  .avg { font-weight: 600; color: #2563eb; }
+  .grades { margin: 8px 0; color: #4b5563; }
+  .empty { text-align: center; color: #6b7280; padding: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Talabalar baholari</h1>
+
+  <div class="card">
+    <div class="row">
+      <input id="nameInput" type="text" placeholder="Talaba ismi">
+      <button id="addStudentBtn">Qo'shish</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+  // Ma'lumotlar telefonning/brauzerning o'zida saqlanadi
+  let students = [];
+
+  function load() {
+    try {
+      students = JSON.parse(localStorage.getItem("students")) || [];
+    } catch (e) {
+      students = [];
+    }
+  }
+
+  function save() {
+    localStorage.setItem("students", JSON.stringify(students));
+  }
+
+  function average(grades) {
+    if (grades.length === 0) return 0;
+    const sum = grades.reduce((a, b) => a + b, 0);
+    return sum / grades.length;
+  }
+
+  function addStudent() {
+    const input = document.getElementById("nameInput");
+    const name = input.value.trim();
+    if (name === "") return;
+    students.push({ name: name, grades: [] });
+    input.value = "";
+    save();
+    render();
+  }
+
+  function addGrade(index, value) {
+    const grade = Number(value);
+    if (grade < 1 || grade > 5) return;
+    students[index].grades.push(grade);
+    save();
+    render();
+  }
+
+  function removeStudent(index) {
+    if (!confirm("O'chirishni xohlaysizmi?")) return;
+    students.splice(index, 1);
+    save();
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    if (students.length === 0) {
+      list.innerHTML = '<div class="empty">Hali talaba yo\'q</div>';
+      return;
+    }
+
+    students.forEach((s, i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const gradesText = s.grades.length ? s.grades.join(", ") : "baho yo'q";
+
+      card.innerHTML =
+        '<div class="student-head">' +
+          '<span class="name"></span>' +
+          '<span class="avg">' + average(s.grades).toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="grades">Baholar: ' + gradesText + '</div>' +
+        '<div class="row">' +
+          '<select>' +
+            '<option>5</option><option>4</option><option>3</option>' +
+            '<option>2</option><option>1</option>' +
+          '</select>' +
+          '<button class="add">Baho</button>' +
+          '<button class="danger del">O\'chirish</button>' +
+        '</div>';
+
+      // Ismni textContent bilan qo'yamiz (xavfsizroq)
+      card.querySelector(".name").textContent = s.name;
+
+      card.querySelector(".add").onclick = () =>
+        addGrade(i, card.querySelector("select").value);
+      card.querySelector(".del").onclick = () => removeStudent(i);
+
+      list.appendChild(card);
+    });
+  }
+
+  document.getElementById("addStudentBtn").onclick = addStudent;
+  document.getElementById("nameInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addStudent();
+  });
+
+  load();
+  render();
+</script>
+</body>
+</html>
